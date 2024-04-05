@@ -10,34 +10,45 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import {useNavigation, StackActions} from '@react-navigation/native';
-import database from '@react-native-firebase/database';
+import firestore from '@react-native-firebase/firestore';
+import {useNavigation} from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 
-export default function LoginScreen() {
+export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [name, setName] = useState('');
 
   //
   const navigation = useNavigation();
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     try {
-      if (email.length > 0 && password.length > 0) {
-        const user = await auth().signInWithEmailAndPassword(email, password);
+      if (email.length > 0 && password.length > 0 && name.length > 0) {
+        const response = await auth().createUserWithEmailAndPassword(
+          email,
+          password,
+        );
 
-        console.log(user);
+        const userData = {
+          id: response.user.uid,
+          name: name,
+          email: email,
+        };
 
-        if (user.user.emailVerified) {
-          alert('You Are Verified');
-          navigation.dispatch(StackActions.replace('Home'));
-        } else {
-          alert('Please Verify Your Email Checkout Inbox');
+        await firestore()
+          .collection('users')
+          .doc(response.user.uid)
+          .set(userData);
 
-          await auth().currentUser.sendEmailVerification();
-          await auth().signOut();
-        }
+        await auth().currentUser.sendEmailVerification();
+
+        await auth().signOut();
+
+        alert('Please Verify YOur Email Check Out Link In Your Inbox');
+
+        navigation.navigate('Login');
       } else {
         alert('Please Enter All Data');
       }
@@ -53,8 +64,14 @@ export default function LoginScreen() {
       <StatusBar hidden={true} />
       <View>
         <Text style={{textAlign: 'center', fontSize: 20, fontWeight: 'bold'}}>
-          Login
+          Metahub
         </Text>
+        <TextInput
+          style={styles.inputBox}
+          placeholder="Enter Your Name"
+          value={name}
+          onChangeText={value => setName(value)}
+        />
         <TextInput
           style={styles.inputBox}
           placeholder="Enter Your Email"
@@ -71,8 +88,8 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => handleLogin()}>
-          <Text style={{color: '#fff'}}>Login</Text>
+          onPress={() => handleSignup()}>
+          <Text style={{color: '#fff'}}>Signup</Text>
         </TouchableOpacity>
 
         <Text>{message}</Text>
@@ -80,9 +97,9 @@ export default function LoginScreen() {
         <TouchableOpacity
           style={styles.signup}
           onPress={() => {
-            navigation.navigate('Signup');
+            navigation.navigate('Login');
           }}>
-          <Text style={{color: 'blue'}}>New User Signup ?</Text>
+          <Text style={{color: 'blue'}}>Already Have An Account ?</Text>
         </TouchableOpacity>
       </View>
     </View>
